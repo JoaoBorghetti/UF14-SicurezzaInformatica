@@ -8,6 +8,7 @@
 #Program loops until user aborts
 
 import os
+from unittest import result
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import Salsa20,AES
 
@@ -44,6 +45,9 @@ def encrypt(inputfile, outputfile,auth):
 def decrypt(inputfile, outputfile,auth):
     #get key file
     keyname = input('Insert key file name (leave empty for default "key" name)\n>')
+    if(len(keyname)< 1):
+    #set default keyfile name
+        keyname = 'key'
     key = read_file(keyname,'rb')
     data = None
     if(auth == True):
@@ -61,7 +65,7 @@ def decrypt(inputfile, outputfile,auth):
             raise SymScripError('Unknown error during decryption')
         else:
             #write file as text
-            write_file(data.decode(),outputfile,'w')
+            write_file(data,outputfile,'wb')
     else:
         #Salsa20 Encryption
         rawdata = read_file(inputfile,'rb')
@@ -75,7 +79,7 @@ def decrypt(inputfile, outputfile,auth):
             raise SymScripError('Unknown error during decryption')
         else:
             #write file as text
-            write_file(data.decode(),outputfile,'w')
+            write_file(data,outputfile,'wb')
 
 #SALSA20 Encryption
 def encryptNoAuth(data:str):
@@ -113,42 +117,38 @@ def write_file(data,filename,mode):
 def Validate(filepath,validator):
     #check path:  whether it exist, is a regular file or a directory and act accordingly
     resultCode,argument = validator(filepath)
-    if(resultCode == 1): #Input file exists
-        return argument
-    elif (resultCode==2): #Input file does not exists
+    if(resultCode ==-1):
         raise SymScripError(argument)
-    elif (resultCode==3): #Output file path is file
-        return argument
-    elif (resultCode==4): #Output file path is directory
+    elif(resultCode==0):
         return argument
     else:
         raise SymScripError('Unknown Error during validation')
 
 
-def checkInput(path):
+def checkInput(_path):
     #check if path is an actual path and return it again, otherwise send error code with its description
-    if(os.path.isfile(path)):
-        return 1,path
+    if(os.path.isfile(_path)):
+        return 0,_path
     else:
-        return 2,'File "'+path+'" does not exist'
+        return -1,'File "'+_path+'" does not exist'
 
-def checkOutput(path):
-    if(os.path.isfile(path)):
+def checkOutput(_path):
+    if(os.path.isfile(_path)):
         #check if path is a file and warn of the overwrite
-        print('file "'+os.path.basename(path) +'" will be overwritten\n')
-        return 3,path
-    if (os.path.isdir(path)):
+        print('file "'+os.path.basename(_path) +'" will be overwritten\n')
+        return 0,_path
+    if (os.path.isdir(_path)):
         #check if file is a directory and set a default file name and sent the absolute path of the destination file
-        print('file will be saved as "OutputFile" at the directory "'+os.path.abspath(path)+'"\n')
-        return 4,os.path.abspath(path)+os.path.sep+'OutputFile'
-    elif(len(path)>0):
+        print('file will be saved as "OutputFile" in directory "'+os.path.abspath(_path)+'"\n')
+        return 0,os.path.abspath(_path)+os.path.sep+'OutputFile'
+    elif(len(_path)>0):
         #(if not a file or a directory) check if there is a filename to set and set it to write inside current directory
-        print('file will be saved as "'+path+'" in current directory ("'+os.getcwd()+'")\n')
-        return 3, path
+        print('file will be saved as "'+_path+'" in directory "'+os.getcwd()+'"\n')
+        return 0, _path
     else:
         #path is empty, default file name will be written inside current directory
-        print('file will be saved as "OutputFile in current directory ("'+os.getcwd()+'")"\n')
-        return 4,'OutputFile'
+        print('file will be saved as "OutputFile" in directory "'+os.getcwd()+'"\n')
+        return 0,'OutputFile'
 
 
 if __name__ == "__main__":
