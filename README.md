@@ -1,3 +1,2 @@
 # UF14-SicurezzaInformatica
-Corso AFP - UF14 - Sicurezza Informatica - Longo
-POGGERS
+Corso AFP - UF14 - Sicurezza Informatica - Riccardo Longo
