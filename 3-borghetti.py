@@ -28,16 +28,6 @@ def ask_and_read_file(prompt,mode:str,checkAndModify=None):
         choice = input('press "q" to abort (any to try again)\n')
         if(choice == 'q'):
             raise ScriptError('Input aborted!')
-    
-
-def write_file(path,data,mode:str,CheckAndModify=None):
-    try:
-        if CheckAndModify is not None:
-            path = CheckAndModify(path)
-        with open(path,mode) as out_file:
-            return out_file.write(data)
-    except (IOError,ReadError) as e:
-        print('Cannot write content to file "'+path+'": '+ str(e))
 
 def ask_and_write_file(prompt,data,mode:str,CheckAndModify=None):
     while True:
@@ -76,12 +66,15 @@ def checkOutput(path:str,defaultFilename:str='output_file'):
         return os.path.abspath(path)+os.path.sep+defaultFilename
     elif(len(path) > 0):
         if(path.find(os.path.sep) > -1 or path.find(os.path.altsep)):
+            #if path contains directory/ies
             dirpath,filename = os.path.split(path)
             if(len(dirpath) > 0):
+                #if path is not "/[filename]"
                 os.makedirs(dirpath,exist_ok=True)
             if(len(filename) >0):
                 print('File will be set as "'+filename+'" in directory: "'+os.path.abspath(dirpath)+'"')
             else:
+                 #if path is "[dirpath]/"
                 print('File will be set as "'+defaultFilename+'" in directory: "'+os.path.abspath(dirpath)+'"')
                 filename = defaultFilename
             return os.path.abspath(dirpath)+os.path.sep+filename
@@ -96,27 +89,31 @@ def generate_keys():
     password = getpass('Type password to protect private key (leave empty for no password)\n')
     if(len(password) < 1):
         password = None
-    #keyname = checkOutput(input('Insert key pair name:\n'),defaultFilename='key_rsa')
     key = RSA.generate(2048)
     publickey = key.public_key().export_key()
     privatekey = key.export_key(passphrase=password)
     ask_and_write_file('Type private key file name:\n',privatekey,'wb',lambda x :checkOutput(x,defaultFilename='key_rsa')+'.pem')
-    #write_file(keyname+'.pem',privatekey,'wb')
     ask_and_write_file('Type public key file name:\n',publickey,'wb',lambda x :checkOutput(x,defaultFilename='key_rsa')+'.pub')
-    #write_file(keyname+'.pub',publickey,'wb')
 
 def Encrypt():
     data = ask_and_read_file('Type name of file to encrypt:\n','rb',checkInput)
     raw_public_key = ask_and_read_file('Type public key file:\n','rb',checkInput)
+    #get RSA key object from public key
     rsa_public_key = RSA.import_key(raw_public_key)
     if(not checkRSAKeyType(rsa_public_key,'public')):
+        #check if RSA key object is a public key object
         print('RSA key is not public')
         return
     session_key = get_random_bytes(16)
+    #create cipher from session key
     data_cipher = AES.new(session_key,AES.MODE_EAX)
+    #encrypt data with session_key-derived cipher
     encrypted_data,tag = data_cipher.encrypt_and_digest(data)
+    #create cipher from public key
     session_key_cipher = PKCS1_OAEP.new(rsa_public_key)
+    #encrypt session key with public_key cipher
     encrypted_session_key = session_key_cipher.encrypt(session_key)
+    #save in file
     ask_and_write_file('Type encrypted output file name:\n',encrypted_session_key+(data_cipher.nonce+tag+encrypted_data),'wb',lambda data:checkOutput(data,defaultFilename='encrypted.bin'))
 
 def Decrypt():
@@ -124,20 +121,30 @@ def Decrypt():
     raw_private_key = ask_and_read_file('Type private key file:\n','rb',checkInput)
     password = getpass('Type password to protect private key (leave empty for no password)\n')
     if(len(password) < 1):
+        #check if there is input
         password = None
+    #get RSA key object from private key
     rsa_private_key = RSA.import_key(raw_private_key,passphrase=password)
     if(not checkRSAKeyType(rsa_private_key,'private')):
+        #check if RSA key object is a private key object
         print('RSA key is not private')
         return
+    #get session key section of the encrypted data
     encrypted_session_key = data[:rsa_private_key.size_in_bytes()]
+    #get the actual data section of the encrypted data
     encrypted_data = data[rsa_private_key.size_in_bytes():]
     encrypted_data_nonce = encrypted_data[:16]
     encrypted_data_tag = encrypted_data[16:32]
     encrypted_data_text = encrypted_data[32:]
+    #create cipher from private key
     session_key_cipher = PKCS1_OAEP.new(rsa_private_key)
+    #decrypt session key with private_key-derived cipher
     session_key = session_key_cipher.decrypt(encrypted_session_key)
+    #create cipher from session key
     data_cipher = AES.new(session_key,nonce=encrypted_data_nonce,mode=AES.MODE_EAX)
+    #decrypt data with session_key-derived cipher
     decrypted_data = data_cipher.decrypt_and_verify(encrypted_data_text,encrypted_data_tag)
+    #save in file
     ask_and_write_file('Type decrypted output file name:\n',decrypted_data,'wb',lambda x:checkOutput(x,defaultFilename='decrypted.bin'))
 
 if __name__ == '__main__':
