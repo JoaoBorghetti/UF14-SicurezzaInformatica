@@ -33,7 +33,9 @@ Create encryption/decryption with hashed Password as key using functionalities f
 ## Task 2 - Hybrid Encryption and Decryption with RSA Keys
 
 **[(classroom link)](https://classroom.google.com/c/NDQ0NTU2MDg4Njcy/a/NDUxNjAzNDI5MzI0/details)**
+
 **[(soluzione prof)](https://drive.google.com/file/d/1SM2oqklByR9fLeXmwJRgrU3x0g7rDgp6/view)**
+
 Create encryption/decryption with hybrid mode or key encapsulation using RSA Keys from [Pycryptodome library](https://pypi.org/project/pycryptodome/)
 
 [Script](3-borghetti.py)
