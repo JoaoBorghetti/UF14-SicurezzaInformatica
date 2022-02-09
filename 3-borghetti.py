@@ -2,7 +2,6 @@
 # Hybrid Encrypt/Decrypt:
 # Generate RSA Keys.
 # Encrypt/decrypt file using an hybrid encryption schema or key encapsulation.
-#
 import os
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP,AES
@@ -11,6 +10,7 @@ from getpass import getpass
 
 class ScriptError(Exception):
     '''Error occurred during execution'''
+
 class ReadError(Exception):
     '''Error occurred during file read proccess'''
 
@@ -83,7 +83,6 @@ def checkOutput(path:str,defaultFilename:str='output_file'):
     else:
         print('File will be set as "'+defaultFilename+'" in current directory:"'+os.getcwd()+'"')
         return defaultFilename
-
 
 def generate_keys():
     password = getpass('Type password to protect private key (leave empty for no password)\n')
